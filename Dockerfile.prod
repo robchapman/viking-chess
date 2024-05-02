@@ -1,0 +1,30 @@
+# Use a minimal Ruby image for production
+FROM ruby:3.3.1-slim
+
+# Install essential dependencies
+RUN apt-get update -qq && \
+    apt-get install -y nodejs yarn postgresql-client
+
+# Set the working directory in the container
+WORKDIR /app
+
+# Copy the Gemfile, Gemfile.lock, package.json, and yarn.lock into the container
+COPY Gemfile Gemfile.lock package.json yarn.lock ./
+
+# Install gem dependencies
+RUN bundle install --without development test
+
+# Install JavaScript dependencies
+RUN yarn install --production
+
+# Copy the application code into the container
+COPY . .
+
+# Precompile assets
+RUN RAILS_ENV=production bundle exec rails assets:precompile
+
+# Expose port 3000 to the Docker host
+EXPOSE 3000
+
+# Command to start the Rails server in production mode
+CMD ["rails", "server", "-e", "production"]
